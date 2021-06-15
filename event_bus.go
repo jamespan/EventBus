@@ -136,9 +136,11 @@ func (bus *EventBus) Publish(topic string, args ...interface{}) {
 		// so make a copy and iterate the copied slice.
 		copyHandlers := make([]*eventHandler, len(handlers))
 		copy(copyHandlers, handlers)
+		removed := false
 		for i, handler := range copyHandlers {
 			if handler.flagOnce {
-				bus.removeHandler(topic, i)
+				copyHandlers[i] = nil
+				removed = true
 			}
 			if !handler.async {
 				bus.doPublish(handler, topic, args...)
@@ -151,6 +153,15 @@ func (bus *EventBus) Publish(topic string, args ...interface{}) {
 				}
 				go bus.doPublishAsync(handler, topic, args...)
 			}
+		}
+		if removed {
+			left := make([]*eventHandler, 0, len(handlers))
+			for _, handler := range copyHandlers {
+				if handler != nil {
+					left = append(left, handler)
+				}
+			}
+			bus.handlers[topic] = left
 		}
 	}
 }

@@ -113,7 +113,7 @@ func TestPublish(t *testing.T) {
 	bus.Publish("topic", 10, nil)
 }
 
-func TestSubcribeOnceAsync(t *testing.T) {
+func TestSubscribeOnceAsync(t *testing.T) {
 	results := make([]int, 0)
 
 	bus := New()
@@ -127,6 +127,31 @@ func TestSubcribeOnceAsync(t *testing.T) {
 	bus.WaitAsync()
 
 	if len(results) != 1 {
+		t.Fail()
+	}
+
+	if bus.HasCallback("topic") {
+		t.Fail()
+	}
+}
+
+func TestMultiSubscribeOnceAsync(t *testing.T) {
+	results := make([]int, 0)
+
+	bus := New()
+	bus.SubscribeOnceAsync("topic", func(a int, out *[]int) {
+		*out = append(*out, a)
+	})
+	bus.SubscribeOnceAsync("topic", func(a int, out *[]int) {
+		*out = append(*out, a)
+	})
+
+	bus.Publish("topic", 10, &results)
+	//bus.Publish("topic", 10, &results)
+
+	bus.WaitAsync()
+
+	if len(results) != 2 {
 		t.Fail()
 	}
 
